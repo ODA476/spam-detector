@@ -1,25 +1,19 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from ..schemas.email import EmailRequest
 from ..utils.model_utils import clean_text
-from ..main import models
+from fastapi import Request
 
 router = APIRouter(prefix='/email', tags=['Email Detection'])
 
-def get_models():
-    """Dependency to ensure models are loaded."""
-    if not models:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Models not loaded")
-    return models
-
-print(models)
-
 @router.post("/predict/naive_bayes")
-def predict_email_Naive_Bayes(request: EmailRequest):
-    if not request.email or not request.email.strip():
+def predict_email_Naive_Bayes(request_data: EmailRequest,
+    request: Request):
+    if not request_data.email or not request_data.email.strip():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email text is required")
 
+    models = request.app.state.models
     # 1. Clean
-    cleaned = clean_text(request.email)
+    cleaned = clean_text(request_data.email)
     # 2. Vectorize
     vectorized =  models["tfidf_nb"].transform([cleaned]).toarray()
     # 3. Predict
@@ -34,12 +28,15 @@ def predict_email_Naive_Bayes(request: EmailRequest):
     }
 
 @router.post("/predict/logistic_regrssion")
-def predict_email_logistic_regrssion(request: EmailRequest):
-    if not request.email or not request.email.strip():
+def predict_email_logistic_regrssion(request_data: EmailRequest,
+    request: Request):
+    if not request_data.email or not request_data.email.strip():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email text is required")
 
+    models = request.app.state.models
+    
     # 1. Clean
-    cleaned = clean_text(request.email)
+    cleaned = clean_text(request_data.email)
     # 2. Vectorize
     vectorized = models["tfidf_lr"].transform([cleaned]).toarray()
     # 3. Predict

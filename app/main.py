@@ -6,14 +6,10 @@ models = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Load all models once at startup
-    global models
-    models = load_all_models()
+    app.state.models = load_all_models()
     yield
-    # Optional: cleanup if needed (close connections, etc.)
-    models.clear()
 
-app = FastAPI(title="Spam Detection API", version="1.0.0")
+app = FastAPI(title="Spam Detection API", version="1.0.0", lifespan=lifespan)
 
 from .routes import email_detection
 app.include_router(email_detection.router, prefix='/api')
